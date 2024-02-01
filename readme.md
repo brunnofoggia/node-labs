@@ -1,0 +1,1 @@
+Diretório direcionado a elaboração de novas idéias
