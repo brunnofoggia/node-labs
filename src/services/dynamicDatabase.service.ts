@@ -26,11 +26,11 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
         DynamicDatabase.DatabaseConnect = DatabaseConnect;
     }
 
-    static async setDataSource({ poolId = 'default', database = '', databaseDir = '', alias = '', synchronize = false }) {
+    static async setDataSource({ poolId = 'default', database = '', databaseDir = '', alias = '', synchronize = false, secretPath = undefined }) {
         const _alias = alias || database;
         const datasourcePath = this.defineDatasourcePath(_alias, poolId);
         if (!this.getDataSource(_alias, poolId)) {
-            DynamicDatabase.dataSources[datasourcePath] = await DynamicDatabase.DatabaseConnect({ database, databaseDir, synchronize });
+            DynamicDatabase.dataSources[datasourcePath] = await DynamicDatabase.DatabaseConnect({ database, databaseDir, synchronize, secretPath });
             debug(
                 'connected to database',
                 `"${DynamicDatabase.dataSources[datasourcePath]?.options?.database || '?'}"`,
