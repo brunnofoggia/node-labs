@@ -11,8 +11,9 @@ export const stringToJSON = ({ input, pairSeparator = ';', keyValueSeparator = '
             value = pair.substring(divisorIndex + 1);
         } else {
             key = keys[index];
-            if (key === undefined) throw new Error('Key not found for index ' + index + ' in keys array.');
             value = pair;
+            if (key === undefined)
+                throw new Error('stringToJSON: Key not found for index ' + index + ' in keys array or string format not properly set.');
         }
 
         json[key] = value;
