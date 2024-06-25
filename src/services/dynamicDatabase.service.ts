@@ -1,10 +1,23 @@
 import _debug from 'debug';
 const debug = _debug('app:db:DynamicDatabase');
 
-import { keys } from 'lodash';
+import { defaultsDeep, keys, omit } from 'lodash';
 import { QueryRunner, Repository } from 'typeorm';
 import { CrudService } from './crud.service';
 // import _ from 'lodash';
+
+export interface DatasourceOptions {
+    database: string;
+    databaseDir: string;
+    synchronize: boolean;
+    secretPath: string;
+    [key: string]: any;
+}
+
+export interface DynamicDatasourceOptions extends DatasourceOptions {
+    poolId: string;
+    alias: string;
+}
 
 export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
     protected static DatabaseConnect;
@@ -26,11 +39,13 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
         DynamicDatabase.DatabaseConnect = DatabaseConnect;
     }
 
-    static async setDataSource({ poolId = 'default', database = '', databaseDir = '', alias = '', synchronize = false, secretPath = undefined }) {
-        const _alias = alias || database;
-        const datasourcePath = this.defineDatasourcePath(_alias, poolId);
-        if (!this.getDataSource(_alias, poolId)) {
-            DynamicDatabase.dataSources[datasourcePath] = await DynamicDatabase.DatabaseConnect({ database, databaseDir, synchronize, secretPath });
+    static async setDataSource(options: Partial<DynamicDatasourceOptions> = {}) {
+        const defaultOptions = { poolId: 'default', alias: '', database: '', databaseDir: '', synchronize: false, secretPath: undefined };
+        const _options = defaultsDeep({}, options, defaultOptions);
+        const _alias = _options.alias || _options.database;
+        const datasourcePath = this.defineDatasourcePath(_alias, _options.poolId);
+        if (!this.getDataSource(_alias, _options.poolId)) {
+            DynamicDatabase.dataSources[datasourcePath] = await DynamicDatabase.DatabaseConnect(omit(_options, 'poolId', 'alias'));
             debug(
                 'connected to database',
                 `"${DynamicDatabase.dataSources[datasourcePath]?.options?.database || '?'}"`,
@@ -38,7 +53,7 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
                 datasourcePath,
             );
         }
-        return DynamicDatabase.getDataSource(_alias, poolId);
+        return DynamicDatabase.getDataSource(_alias, _options.poolId);
     }
 
     static getDataSource(alias, poolId = 'default') {
