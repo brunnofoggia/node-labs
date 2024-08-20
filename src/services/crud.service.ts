@@ -1,8 +1,5 @@
-import _debug from 'debug';
-const debug = _debug('app:db:CrudService');
-
 import { HttpStatusCode } from 'axios';
-import { filter, find, keys, omit, result, size } from 'lodash';
+import { filter, find, omit, result, size } from 'lodash';
 import { IsNull } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
@@ -21,16 +18,17 @@ export class CrudService<ENTITY> {
     protected _deletedAttribute = 'deletedAt';
     protected _updatedAttribute;
 
-    getIdAttribute() {
-        return this.idAttribute;
+    // #region core methods (cannot be overriden)
+    private async _checkIdTaken(id: number | string): Promise<boolean> {
+        const item = await this._findById(id);
+        if (!item) throwHttpException('', HttpStatusCode.NotFound);
+        return true;
     }
 
-    getRepository() {
-        return this.repository;
-    }
-
-    count(options: any = {}): Promise<number> {
-        return this.getRepository().count(options);
+    private async _checkIdNotTaken(id: number | string): Promise<boolean> {
+        const item = await this._findById(id);
+        if (item) throwHttpException('', HttpStatusCode.Found);
+        return true;
     }
 
     private _findAll(options: any = {}): Promise<ENTITY[]> {
@@ -67,14 +65,6 @@ export class CrudService<ENTITY> {
         return this._findAll(options);
     }
 
-    find(options = {}): Promise<ENTITY[]> {
-        return this._find(options);
-    }
-
-    findAll(options = {}): Promise<ENTITY[]> {
-        return this._findAll(options);
-    }
-
     private async _findById(id: number | string, options: any = {}): Promise<ENTITY> {
         const where: any = { ...options.where };
         where[this.idAttribute] = id;
@@ -88,22 +78,6 @@ export class CrudService<ENTITY> {
                 })
             ).shift() || null
         );
-    }
-
-    async findById(id: number | string, options: any = {}): Promise<ENTITY> {
-        return await this._findById(id, options);
-    }
-
-    async checkIdTaken(id: number | string): Promise<boolean> {
-        const item = await this._findById(id);
-        if (!item) throwHttpException('', HttpStatusCode.NotFound);
-        return true;
-    }
-
-    async checkIdNotTaken(id: number | string): Promise<boolean> {
-        const item = await this._findById(id);
-        if (item) throwHttpException('', HttpStatusCode.Found);
-        return true;
     }
 
     private async _create(_item: QueryDeepPartialEntity<ENTITY>, params: Partial<CrudServiceParamsInterface> = {}): Promise<IdInterface> {
@@ -123,19 +97,11 @@ export class CrudService<ENTITY> {
         return _result;
     }
 
-    async create(_item: QueryDeepPartialEntity<ENTITY>, params: Partial<CrudServiceParamsInterface> = {}): Promise<IdInterface | ENTITY> {
-        return await this._create(_item, params);
-    }
-
     private async _update(_item: QueryDeepPartialEntity<ENTITY>): Promise<IdInterface> {
         await this.checkIdTaken(result(_item, this.idAttribute));
         const item = this.updatedAt(_item);
         await this.getRepository().save(item);
         return { id: result(item, this.idAttribute) };
-    }
-
-    async update(_item: QueryDeepPartialEntity<ENTITY>): Promise<IdInterface> {
-        return await this._update(_item);
     }
 
     // insert or update a record
@@ -146,10 +112,12 @@ export class CrudService<ENTITY> {
         return { id: result(item, this.idAttribute) };
     }
 
-    async replace(_item: QueryDeepPartialEntity<ENTITY>): Promise<IdInterface> {
-        return await this._replace(_item);
+    // decides whether to soft delete or hard delete
+    private async _remove(id: number | string): Promise<IdInterface> {
+        return this.shouldApplyDeletedAt() ? this.delete(id) : this.hide(id);
     }
 
+    // soft delete
     private async _hide(id: number | string): Promise<IdInterface> {
         if (!this.shouldApplyDeletedAt())
             throwHttpException(`couldnt find "${this._deletedAttribute}" field for soft deletion`, HttpStatusCode.NotImplemented);
@@ -165,28 +133,61 @@ export class CrudService<ENTITY> {
         return { id };
     }
 
-    async hide(id: number | string): Promise<IdInterface> {
-        return await this._hide(id);
-    }
-
+    // hard delete
     private async _delete(id: number | string): Promise<IdInterface> {
         await this.checkIdTaken(id);
         await this.getRepository().delete(id);
         return { id };
+    }
+    // #endregion
+
+    // #region public methods (can be overriden)
+    async checkIdTaken(id: number | string): Promise<boolean> {
+        return this._checkIdTaken(id);
+    }
+
+    async checkIdNotTaken(id: number | string): Promise<boolean> {
+        return this._checkIdNotTaken(id);
+    }
+
+    find(options = {}): Promise<ENTITY[]> {
+        return this._find(options);
+    }
+
+    findAll(options = {}): Promise<ENTITY[]> {
+        return this._findAll(options);
+    }
+
+    async findById(id: number | string, options: any = {}): Promise<ENTITY> {
+        return await this._findById(id, options);
+    }
+
+    async create(_item: QueryDeepPartialEntity<ENTITY>, params: Partial<CrudServiceParamsInterface> = {}): Promise<IdInterface | ENTITY> {
+        return await this._create(_item, params);
+    }
+
+    async update(_item: QueryDeepPartialEntity<ENTITY>): Promise<IdInterface> {
+        return await this._update(_item);
+    }
+
+    async replace(_item: QueryDeepPartialEntity<ENTITY>): Promise<IdInterface> {
+        return await this._replace(_item);
+    }
+
+    async hide(id: number | string): Promise<IdInterface> {
+        return await this._hide(id);
     }
 
     async delete(id: number | string): Promise<IdInterface> {
         return await this._delete(id);
     }
 
-    private async _remove(id: number | string): Promise<IdInterface> {
-        return this.shouldApplyDeletedAt() ? this.delete(id) : this.hide(id);
-    }
-
     async remove(id: number | string): Promise<IdInterface> {
         return await this._remove(id);
     }
+    // #endregion
 
+    // #region helpers
     async createIfNotExists(
         _item: QueryDeepPartialEntity<ENTITY>,
         where: QueryDeepPartialEntity<ENTITY>,
@@ -204,6 +205,43 @@ export class CrudService<ENTITY> {
         return _result;
     }
 
+    count(options: any = {}): Promise<number> {
+        return this.getRepository().count(options);
+    }
+
+    async countQueryBuilder(queryBuilder) {
+        return this.countSubQuery(queryBuilder.getQuery());
+    }
+
+    async countSubQuery(query, ...args) {
+        const _countQuery = this.buildCountSubQuery(query);
+        return this._countQueryExec(_countQuery, ...args);
+    }
+
+    async _countQueryExec(countQuery, ...args): Promise<number> {
+        const rawData = (await this.getRepository().query(countQuery, args))?.shift() || {};
+        return +(rawData?.count || 0);
+    }
+
+    buildCountSubQuery(query) {
+        return `
+            SELECT COUNT(1) AS "count" FROM (
+                ${query}
+            ) AS "result"
+        `;
+    }
+
+    // #endregion
+
+    // #region getters
+    getIdAttribute() {
+        return this.idAttribute;
+    }
+
+    getRepository() {
+        return this.repository;
+    }
+
     getEntity() {
         const repository = this.getRepository();
         return repository.target;
@@ -217,6 +255,12 @@ export class CrudService<ENTITY> {
         return this.getDataSource().getMetadata(this.getEntity());
     }
 
+    getConnectionType() {
+        return this.getDataSource().options.type;
+    }
+    // #endregion
+
+    // #region metadata
     findMetadata(fn) {
         const metadata = this.getMetadata();
         return find(metadata.columns, fn);
@@ -226,15 +270,10 @@ export class CrudService<ENTITY> {
         const metadata = this.getMetadata();
         return filter(metadata, fn);
     }
+    // #endregion
 
-    getConnectionType() {
-        return this.getDataSource().options.type;
-    }
-
-    shouldApplyManualUpdatedAt() {
-        return this.getConnectionType() === 'postgres';
-    }
-
+    // #region hooks
+    // updated at only works for postgres if implemented manually
     updatedAt(_item) {
         if (this.shouldApplyManualUpdatedAt()) {
             if (!this._updatedAttribute) {
@@ -250,6 +289,10 @@ export class CrudService<ENTITY> {
         return _item;
     }
 
+    shouldApplyManualUpdatedAt() {
+        return this.getConnectionType() === 'postgres';
+    }
+
     deletedAt(_item) {
         if (this.shouldApplyDeletedAt()) _item[this._deletedAttribute] = new Date().toISOString();
         return _item;
@@ -262,4 +305,5 @@ export class CrudService<ENTITY> {
         const column = find(metadata.columns, (column) => column.propertyName === this._deletedAttribute);
         return (this._shouldApplyDeletedAt = !!column);
     }
+    // #endregion
 }
