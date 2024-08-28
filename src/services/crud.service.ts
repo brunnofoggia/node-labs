@@ -114,7 +114,7 @@ export class CrudService<ENTITY> {
 
     // decides whether to soft delete or hard delete
     private async _remove(id: number | string): Promise<IdInterface> {
-        return this.shouldApplyDeletedAt() ? this.delete(id) : this.hide(id);
+        return this.shouldApplyDeletedAt() ? this.hide(id) : this.delete(id);
     }
 
     // soft delete
@@ -159,31 +159,31 @@ export class CrudService<ENTITY> {
     }
 
     async findById(id: number | string, options: any = {}): Promise<ENTITY> {
-        return await this._findById(id, options);
+        return this._findById(id, options);
     }
 
     async create(_item: QueryDeepPartialEntity<ENTITY>, params: Partial<CrudServiceParamsInterface> = {}): Promise<IdInterface | ENTITY> {
-        return await this._create(_item, params);
+        return this._create(_item, params);
     }
 
     async update(_item: QueryDeepPartialEntity<ENTITY>): Promise<IdInterface> {
-        return await this._update(_item);
+        return this._update(_item);
     }
 
     async replace(_item: QueryDeepPartialEntity<ENTITY>): Promise<IdInterface> {
-        return await this._replace(_item);
+        return this._replace(_item);
     }
 
     async hide(id: number | string): Promise<IdInterface> {
-        return await this._hide(id);
+        return this._hide(id);
     }
 
     async delete(id: number | string): Promise<IdInterface> {
-        return await this._delete(id);
+        return this._delete(id);
     }
 
     async remove(id: number | string): Promise<IdInterface> {
-        return await this._remove(id);
+        return this._remove(id);
     }
     // #endregion
 
@@ -270,6 +270,10 @@ export class CrudService<ENTITY> {
         const metadata = this.getMetadata();
         return filter(metadata, fn);
     }
+
+    findMetadataByColumn(columnName) {
+        return this.findMetadata((column) => column.propertyName === columnName);
+    }
     // #endregion
 
     // #region hooks
@@ -301,9 +305,12 @@ export class CrudService<ENTITY> {
     shouldApplyDeletedAt() {
         if (typeof this._shouldApplyDeletedAt !== 'undefined') return this._shouldApplyDeletedAt;
 
-        const metadata = this.getMetadata();
-        const column = find(metadata.columns, (column) => column.propertyName === this._deletedAttribute);
+        const column = this.findColumnDeletedAt();
         return (this._shouldApplyDeletedAt = !!column);
+    }
+
+    findColumnDeletedAt() {
+        return this.findMetadataByColumn(this._deletedAttribute);
     }
     // #endregion
 }
