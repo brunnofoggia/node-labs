@@ -23,7 +23,7 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
     protected static DatabaseConnect;
     private static dataSources: any = {};
 
-    protected dataSource;
+    protected dataSource: any;
     protected repository: Repository<any>;
 
     protected poolId = 'default';
@@ -94,7 +94,7 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
         else if (value) this.dataSource = value;
     }
 
-    initialize() {
+    async initialize() {
         return this;
     }
 
