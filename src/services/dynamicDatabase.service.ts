@@ -102,9 +102,13 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
         return this.dataSource || this.setDataSource();
     }
 
-    setDataSource() {
-        if (!this.dataSource && this.databaseAlias && this.poolId) {
-            this.dataSource = DynamicDatabase.getDataSource(this.databaseAlias, this.poolId);
+    setDataSource(datasource = null): any {
+        if (!this.dataSource) {
+            if (datasource) {
+                this.dataSource = datasource;
+            } else if (this.databaseAlias && this.poolId) {
+                this.dataSource = DynamicDatabase.getDataSource(this.databaseAlias, this.poolId);
+            }
         }
         return this.dataSource;
     }

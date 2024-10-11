@@ -17,6 +17,7 @@ module.exports = {
         '@typescript-eslint/interface-name-prefix': 0,
         '@typescript-eslint/no-explicit-any': 0,
         'security/detect-object-injection': 0,
+        '@typescript-eslint/ban-types': 0,
         // '@typescript-eslint/explicit-function-return-type': 0,
         // '@typescript-eslint/explicit-module-boundary-types': 0,
         // '@typescript-eslint/no-floating-promises': 0,

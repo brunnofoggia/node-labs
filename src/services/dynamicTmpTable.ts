@@ -1,4 +1,34 @@
-import { Entity } from 'typeorm';
+import { Entity, EntityOptions, getMetadataArgsStorage } from 'typeorm';
+
+// Função auxiliar para gerar o nome da restrição
+export function generateConstraintName(entityName: string, columnName: string): string {
+    return `TMP_${entityName.toUpperCase()}_${columnName.toUpperCase()}_${Date.now()}`;
+}
+
+// o objetivo desse decorator é randomizar o nome da constraint da chave primária de uma tabela temporaria com nome dinamico
+export function DynamicEntity(options?: EntityOptions): ClassDecorator {
+    return function (target: Function) {
+        // const entityName = target.name;
+        Entity(options)(target);
+
+        // Obter os metadados das colunas da entidade
+        const columnMetadata: any[] = getMetadataArgsStorage().columns.filter((column) => column.target === target);
+
+        // Encontrar a coluna de chave primária, se for única
+        const primaryKeyColumns = columnMetadata.filter((column) => column?.options?.primary === true);
+        if (primaryKeyColumns.length > 1) return;
+
+        const primaryKeyColumn = primaryKeyColumns[0];
+        if (primaryKeyColumn) {
+            const entityName = target.name;
+            const columnName = primaryKeyColumn.propertyName;
+            const constraintName = options['primaryKeyConstraintName'] || generateConstraintName(entityName, columnName);
+
+            // Atualizar o nome da constraint para a chave primária
+            primaryKeyColumn.options.primaryKeyConstraintName = constraintName;
+        }
+    };
+}
 
 export abstract class DynamicTmpTable {
     // change the table path on the repository after connected to a database
@@ -23,7 +53,7 @@ export abstract class DynamicTmpTable {
 
     // used to create a tmp table with another name (commonly used to create a tmp table for a specific transaction)
     static decorateEntityWithNewTableName(newTableName, schema, EntityClass) {
-        Entity({ name: newTableName, schema })(EntityClass);
+        DynamicEntity({ name: newTableName, schema })(EntityClass);
         return {
             tableName: newTableName,
             schema,

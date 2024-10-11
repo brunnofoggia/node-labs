@@ -243,8 +243,7 @@ export class CrudService<ENTITY> {
     }
 
     getEntity() {
-        const repository = this.getRepository();
-        return repository.target;
+        return this['entity'] || this.getRepository().target;
     }
 
     getDataSource() {
