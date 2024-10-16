@@ -2,7 +2,7 @@ import { Entity, EntityOptions, getMetadataArgsStorage } from 'typeorm';
 
 // Função auxiliar para gerar o nome da restrição
 export function generateConstraintName(entityName: string, columnName: string): string {
-    return `TMP_${entityName.toUpperCase()}_${columnName.toUpperCase()}_${Date.now()}`;
+    return `TMP_${entityName.toUpperCase()}_${columnName.toUpperCase()}`;
 }
 
 // o objetivo desse decorator é randomizar o nome da constraint da chave primária de uma tabela temporaria com nome dinamico
@@ -20,9 +20,9 @@ export function DynamicEntity(options?: EntityOptions): ClassDecorator {
 
         const primaryKeyColumn = primaryKeyColumns[0];
         if (primaryKeyColumn) {
-            const entityName = target.name;
+            const dynamicTableName = options.name;
             const columnName = primaryKeyColumn.propertyName;
-            const constraintName = options['primaryKeyConstraintName'] || generateConstraintName(entityName, columnName);
+            const constraintName = options['primaryKeyConstraintName'] || generateConstraintName(dynamicTableName, columnName);
 
             // Atualizar o nome da constraint para a chave primária
             primaryKeyColumn.options.primaryKeyConstraintName = constraintName;
@@ -68,9 +68,12 @@ export abstract class DynamicTmpTable {
             synchronize: true,
         });
 
-        if (!keepConnection) await datasource.destroy();
+        if (!keepConnection) {
+            await datasource.destroy();
+            // return undefined;
+        }
 
-        return datasource || null;
+        return datasource;
     }
 
     // connect to a database with an additional folder for dynamic entities
