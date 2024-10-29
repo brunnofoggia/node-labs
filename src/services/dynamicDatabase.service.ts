@@ -164,11 +164,16 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
     }
 
     async insertBulkData(data: Array<any>, queryRunner: QueryRunner = null, options: any = {}) {
-        const queryBuilder = this.getRepository().createQueryBuilder('', queryRunner).insert().into(this.entity).values(data);
-        if (options?.returning) queryBuilder.returning(options.returning);
+        if (data.length) {
+            const queryBuilder = this.getRepository().createQueryBuilder('', queryRunner).insert().into(this.entity).values(data);
+            if (options?.returning) queryBuilder.returning(options.returning);
 
-        const result = await queryBuilder.execute();
-        debug(`Inserted ${result?.raw?.length} rows`);
+            const result = await queryBuilder.execute();
+            const affected = result?.raw?.length;
+            debug(`Inserted ${affected} rows into ${this.entity?.name || '?'}`);
+            return;
+        }
+        debug(`Empty data. Skipped inserting into ${this.entity?.name || '?'}`);
     }
 
     async truncate() {
