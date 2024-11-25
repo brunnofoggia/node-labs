@@ -58,11 +58,11 @@ export class CrudService<ENTITY> {
             ...options.where,
         };
 
-        if (this.shouldApplyDeletedAt()) {
+        if (this.shouldApplyDeletedAt() && !options._ignoreDeleted) {
             options.where[this._deletedAttribute] = IsNull();
         }
 
-        return this._findAll(options);
+        return this._findAll(omit(options, '_ignoreDeleted'));
     }
 
     private async _findById(id: number | string, options: any = {}): Promise<ENTITY> {
@@ -106,10 +106,16 @@ export class CrudService<ENTITY> {
 
     // insert or update a record
     private async _replace(_item: QueryDeepPartialEntity<ENTITY>): Promise<IdInterface> {
-        const id = result(_item, this.idAttribute);
-        const item = !id ? _item : this.updatedAt(_item);
-        await this.getRepository().save(item);
-        return { id: result(item, this.idAttribute) };
+        const id = result(_item, this.idAttribute) as any;
+        const existentItem = id ? await this.findById(id) : null;
+
+        if (existentItem) {
+            const item = this.updatedAt(_item);
+            await this.getRepository().save(item);
+            return { id: result(item, this.idAttribute) };
+        }
+
+        return (await this.create(_item)) as IdInterface;
     }
 
     // decides whether to soft delete or hard delete
