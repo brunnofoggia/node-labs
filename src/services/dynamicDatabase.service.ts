@@ -169,6 +169,8 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
             if (options?.returning) queryBuilder.returning(options.returning);
 
             const result = await queryBuilder.execute();
+            // console.log('insertBulkData result', result);
+
             const affected = result?.raw?.length;
             debug(`Inserted ${affected} rows into ${this.entity?.name || '?'}`);
             return;
