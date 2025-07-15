@@ -1,6 +1,6 @@
 {
     "name": "node-labs",
-    "version": "0.9.3-alpha.1",
+    "version": "0.9.4-alpha.1",
     "description": "",
     "license": "ISC",
     "author": "Bruno Foggia",
@@ -63,7 +63,6 @@
         "rimraf": "^5.0.7",
         "rxjs": "^7.8.1",
         "source-map-support": "^0.5.21",
-        "sqlite3": "^5.1.7",
         "supertest": "^7.0.0",
         "ts-jest": "^29.1.2",
         "ts-loader": "^9.5.1",
