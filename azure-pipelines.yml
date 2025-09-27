@@ -25,5 +25,6 @@ stages:
           - task: Npm@1
             displayName: npm publish
             inputs:
-              command: publish
+              command: custom
               workingDir: $(System.DefaultWorkingDirectory)
+              customCommand: publish
