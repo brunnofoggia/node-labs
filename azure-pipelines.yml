@@ -5,9 +5,9 @@ trigger:
   branches:
     include: [ 'refs/heads/main' ]
 stages:
-  - stage: Build & Deploy
+  - stage: Publish
     jobs:
-      - job: Build & Deploy
+      - job: Publish
         workspace:
           clean: all
         steps:
