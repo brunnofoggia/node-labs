@@ -5,9 +5,9 @@ trigger:
   branches:
     include: [ 'refs/heads/main' ]
 stages:
-  - stage: Build
+  - stage: Build & Deploy
     jobs:
-      - job: Build
+      - job: Build & Deploy
         workspace:
           clean: all
         steps:
@@ -22,53 +22,13 @@ stages:
             inputs:
               workingDir: $(System.DefaultWorkingDirectory)
               verbose: false
-          - task: CopyFiles@2
-            displayName: Copy Source
+          - task: npmAuthenticate@0
             inputs:
-              SourceFolder: $(System.DefaultWorkingDirectory)
-              Contents: |
-                **/*
-                !.git/**/*
-                !.gitignore
-              TargetFolder: $(System.DefaultWorkingDirectory)/$(Build.BuildId)
-          - task: ArchiveFiles@2
+              workingFile: $(System.DefaultWorkingDirectory)/.npmrc
+          - task: Npm@1
+            displayName: npm publish
             inputs:
-              rootFolderOrFile: $(System.DefaultWorkingDirectory)/$(Build.BuildId)
-              includeRootFolder: false
-              archiveType: zip
-              archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
-          - task: PublishBuildArtifacts@1
-            inputs:
-              PathtoPublish: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
-              ArtifactName: bauk-shared-nodelabs
-              publishLocation: Container
-  - stage: Deploy
-    condition: succeeded()
-    dependsOn:
-      - Build
-    jobs:
-      - deployment: ''
-        environment: 
-            name: PRD
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - task: NodeTool@0
-                  inputs:
-                    versionSpec: 20.x
-                - task: ExtractFiles@1
-                  inputs:
-                    archiveFilePatterns: $(Pipeline.Workspace)/bauk-shared-nodelabs/$(Build.BuildId).zip
-                    destinationFolder: $(Agent.TempDirectory)/$(Build.BuildId)
-                    cleanDestinationFolder: true
-                - task: npmAuthenticate@0
-                  inputs:
-                    workingFile: $(Agent.TempDirectory)/$(Build.BuildId)/.npmrc
-                - task: Npm@1
-                  displayName: npm publish
-                  inputs:
-                    command: publish
-                    workingDir: $(Agent.TempDirectory)/$(Build.BuildId)
-                    publishRegistry: useFeed
-                    publishFeed: BaukRegistry
+              command: publish
+              workingDir: $(System.DefaultWorkingDirectory)
+              publishRegistry: useFeed
+              publishFeed: BaukRegistry
