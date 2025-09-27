@@ -60,6 +60,9 @@ stages:
                 - task: NodeTool@0
                   inputs:
                     versionSpec: 20.x
+                - task: npmAuthenticate@0
+                  inputs:
+                    workingFile: $(System.DefaultWorkingDirectory)/.npmrc
                 - task: ExtractFiles@1
                   inputs:
                     archiveFilePatterns: $(Pipeline.Workspace)/bauk-shared-nodelabs/$(Build.BuildId).zip
