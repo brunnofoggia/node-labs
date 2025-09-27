@@ -31,6 +31,7 @@ stages:
             inputs:
               SourceFolder: $(System.DefaultWorkingDirectory)
               Contents: |
+                .npmrc
                 *.tgz
               TargetFolder: $(System.DefaultWorkingDirectory)/$(Build.BuildId)
           - task: ArchiveFiles@2
