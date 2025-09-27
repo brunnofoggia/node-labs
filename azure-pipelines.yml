@@ -60,8 +60,9 @@ stages:
                 - task: NodeTool@0
                   inputs:
                     versionSpec: 20.x
-                - task: UseAzureArtifactsCredential@1
+                - task: npmAuthenticate@0
                   inputs:
+                    workingFile: $(System.DefaultWorkingDirectory)/.npmrc
                     feed: BaukRegistry
                 - task: ExtractFiles@1
                   inputs:
