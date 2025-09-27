@@ -35,6 +35,8 @@ stages:
               SourceFolder: $(System.DefaultWorkingDirectory)
               Contents: |
                 .npmrc
+                package.json
+                package-lock.json
                 *.tgz
               TargetFolder: $(System.DefaultWorkingDirectory)/$(Build.BuildId)
           - task: ArchiveFiles@2
