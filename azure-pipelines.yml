@@ -1,0 +1,77 @@
+pool:
+  vmImage: 'ubuntu-latest'
+trigger:
+  batch: true
+  branches:
+    include: [ 'refs/heads/main' ]
+stages:
+  - stage: Build
+    jobs:
+      - job: Build
+        workspace:
+          clean: all
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: 20.x
+          - task: Npm@1
+            displayName: npm install
+            inputs:
+              workingDir: $(System.DefaultWorkingDirectory)
+              verbose: false
+          - task: Npm@1
+            displayName: npm pack
+            inputs:
+              command: pack
+              workingDir:  $(System.DefaultWorkingDirectory)
+              verbose: false
+          - task: CopyFiles@2
+            displayName: Copy Source
+            inputs:
+              SourceFolder: $(System.DefaultWorkingDirectory)
+              Contents: |
+                lib/
+                package.json
+                package-lock.json
+              TargetFolder: $(System.DefaultWorkingDirectory)/$(Build.BuildId)
+          - task: ArchiveFiles@2
+            inputs:
+              rootFolderOrFile: $(System.DefaultWorkingDirectory)/$(Build.BuildId)
+              includeRootFolder: false
+              archiveType: zip
+              archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+              ArtifactName: bauk-shared-nodelabs
+              publishLocation: Container
+  - stage: Deploy
+    condition: succeeded()
+    dependsOn:
+      - Build
+    jobs:
+      - deployment: ''
+        environment: 
+            name: PRD
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: NodeTool@0
+                  inputs:
+                    versionSpec: 20.x
+                - task: UseAzureArtifactsCredential@1
+                  inputs:
+                    feed: BaukRegistry
+                - task: ExtractFiles@1
+                  inputs:
+                    archiveFilePatterns: $(Pipeline.Workspace)/bauk-shared-nodelabs/$(Build.BuildId).zip
+                    destinationFolder: $(Agent.TempDirectory)/$(Build.BuildId)
+                    cleanDestinationFolder: true
+                - task: Npm@1
+                  displayName: npm publish
+                  inputs:
+                    command: publish
+                    workingDir:  $(System.DefaultWorkingDirectory)
+                    publishRegistry: https://pkgs.dev.azure.com/$(System.CollectionUri)/_packaging/BaukRegistry/npm/registry/
+                    verbose: false
