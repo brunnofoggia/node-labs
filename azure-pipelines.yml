@@ -22,13 +22,8 @@ stages:
             inputs:
               workingDir: $(System.DefaultWorkingDirectory)
               verbose: false
-          - task: npmAuthenticate@0
-            inputs:
-              workingFile: $(System.DefaultWorkingDirectory)/.npmrc
           - task: Npm@1
             displayName: npm publish
             inputs:
               command: publish
               workingDir: $(System.DefaultWorkingDirectory)
-              publishRegistry: useFeed
-              publishFeed: BaukRegistry
