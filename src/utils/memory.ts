@@ -1,5 +1,5 @@
 import _debug from 'debug';
-const debug = _debug('app:monitor');
+const debug = _debug('app:debug:monitor');
 
 export class MemoryUtil {
     protected memoryUsage = 0;
@@ -8,7 +8,7 @@ export class MemoryUtil {
     protected static _instance: MemoryUtil;
 
     static instance() {
-        if (!this._instance) this._instance = new MemoryUtil;
+        if (!this._instance) this._instance = new MemoryUtil();
         return this._instance;
     }
 
@@ -23,8 +23,7 @@ export class MemoryUtil {
             this.memoryUsage = memoryUsage.rss;
         }
 
-        if (this._debug)
-            debug(`Uso de memória: ${this.formatMemory(memoryUsage.rss)}MB`);
+        if (this._debug) debug(`Uso de memória: ${this.formatMemory(memoryUsage.rss)}MB`);
     }
 
     memoryInterval(ms = 100) {
@@ -50,5 +49,4 @@ export class MemoryUtil {
     formatMemory(memoryUsage) {
         return (memoryUsage / (1024 * 1024)).toFixed(2);
     }
-
 }
