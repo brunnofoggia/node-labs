@@ -1,7 +1,7 @@
 import { Column } from 'typeorm';
 import { set } from '../utils/entities';
 
-export class TimestampEntity {
+export class CreatedAtEntity {
     @Column(
         set({
             name: 'created_at',
@@ -11,7 +11,9 @@ export class TimestampEntity {
         }),
     )
     createdAt?: Date;
+}
 
+export class TimestampEntity extends CreatedAtEntity {
     @Column(
         set({
             name: 'updated_at',
