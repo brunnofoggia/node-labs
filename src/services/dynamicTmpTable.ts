@@ -62,7 +62,7 @@ export abstract class DynamicTmpTable {
     }
 
     // connect and create a dynamic tmp table
-    static async connectAndSynchronizeEntity(EntityClass, fnConnection, keepConnection = false) {
+    static async connectAndSynchronizeEntity(EntityClass, fnConnection: (options?: any) => Promise<any>, keepConnection = false) {
         const datasource = await fnConnection({
             replaceEntities: [EntityClass],
             synchronize: true,
@@ -78,7 +78,7 @@ export abstract class DynamicTmpTable {
 
     // connect to a database with an additional folder for dynamic entities
     // XXX: Entity must be already decorated
-    static async connectAddingEntityFolder(fnConnection, additionalEntitiesFolders: string | string[]) {
+    static async connectAddingEntityFolder(fnConnection: (options?: any) => Promise<any>, additionalEntitiesFolders: string | string[]) {
         const datasource = await fnConnection({
             additionalEntitiesFolders,
         });
