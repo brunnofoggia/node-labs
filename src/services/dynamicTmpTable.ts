@@ -89,7 +89,14 @@ export abstract class DynamicTmpTable {
     }
 
     // set dynamic tmp table name, decorate entity class and connect to a database making the entity synchronized
-    static async createDynamicTmpTable(transactionUid, tableNamePrefix, schema, EntityClass, fnConnection, keepConnection = false) {
+    static async createDynamicTmpTable(
+        transactionUid,
+        tableNamePrefix,
+        schema,
+        EntityClass,
+        fnConnection: (options?: any) => Promise<any>,
+        keepConnection = false,
+    ) {
         const dynamicTmpTableName = DynamicTmpTable.buildDynamicTmpTableName(tableNamePrefix, transactionUid);
         DynamicTmpTable.decorateEntityWithNewTableName(dynamicTmpTableName, schema, EntityClass);
 
